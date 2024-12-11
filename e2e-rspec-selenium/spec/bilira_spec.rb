@@ -16,7 +16,7 @@ describe "Bilira" do
   end
 
   after(:all) do
-    driver.quit unless debugging?
+    # driver.quit unless debugging?
   end
 
   it "Bilira" do
@@ -48,9 +48,9 @@ describe "Bilira" do
     sleep 3
     # otp kodu girilecek
     otp_gir = driver.find_element(:xpath, '//input[@name="code"]')
-    binding.pry
-
-    otp_gir.send_keys("926774")
+    
+    # otp_gir.send_keys("926774")
+    sleep 15
 
     gonder_button = driver.find_element(:xpath, '//input[@class="button"]')
     gonder_button.click
