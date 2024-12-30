@@ -1,18 +1,23 @@
 load File.dirname(__FILE__) + '/../test_helper.rb'
-load File.expand_path('../gmail_app.rb', __FILE__)
 
 require 'pry'
+require 'google/apis/gmail_v1'
+require 'googleauth'
+require 'googleauth'
+require 'fileutils'
+require 'yaml'
 require_relative 'gmail_app'
 require_relative 'gmail_api_authenticator'
 
+
 describe "Bilira" do
   include TestHelper
-  
+
   before(:all) do
     @driver = $driver = Selenium::WebDriver.for(browser_type, browser_options)
     driver.manage().window().resize_to(1920, 1080)
     # driver.manage().window().move_to(30, 78)
-    # driver.get("https://www.bilira.co/")
+    driver.get("https://www.bilira.co/")
   end
 
   before(:each) do
@@ -25,15 +30,16 @@ describe "Bilira" do
   end
 
   it "Bilira" do
-    # Uygulama çalıştırma
+    app = GmailApp.new
+    app.delete_all_messages
+    app.list_messages
     
     
-
     bilira_page = BiliraPage.new(driver)
 
     bilira_page.accept_cookie
 
-    element = driver.find_element(:xpath, '//a[@data-testid="login-btn"]')
+    element = driver.find_element(:xpath, '//a[@href="https://kripto.bilira.co/login?utm_source=website&utm_medium=header&utm_campaign=login&utm_content=tr"]')
 
     # Actions sınıfını başlatın
     # driver.action.context_click(element).perform
@@ -45,28 +51,39 @@ describe "Bilira" do
     # İkinci sekmeye geçiş yap (ilk sekme 0 indeksli olduğu için 1. sekmeye geçiş yapıyoruz)
     driver.switch_to.window(handles[1])
     sleep 3
-
-    binding.pry
-
+    
+    
+    
     mail = driver.find_element(:xpath, '//input[@name="email"]')
-    mail.send_keys("qatester1532@gmail.com")
+    mail.send_keys("testquality1tester@gmail.com")
 
     password = driver.find_element(:xpath, '//input[@name="password"]')
     password.send_keys("3ZE9tj7miEJR@Qg")
 
     password = driver.find_element(:xpath, '//input[@class="button g-recaptcha"]')
     password.click
-
+    
+    
     sleep 3
     # otp kodu girilecek
-    otp_gir = driver.find_element(:xpath, '//input[@name="code"]')
+    otp_gir = driver.find_element(:xpath, '//*[@class="input"]')
+    app.read_last_message
 
-    # otp_gir.send_keys("926774")
+    otp_gir.send_keys("862573")
     sleep 15
 
     gonder_button = driver.find_element(:xpath, '//input[@class="button"]')
     gonder_button.click
     sleep 8
+
+    telefon_ekle_button=driver.find_element(:xpath, '//*[@class="link-button"]')
+    telefon_ekle_button.click
+
+    telefon_ekle_gec=driver.find_element(:xpath, '//p//a')
+    telefon_ekle_gec.click
+
+    sleep 8
+
 
     coin_arama_butonu = driver.find_element(:xpath, '//*[@aria-keyshortcuts="Meta+K Control+K"]')
     coin_arama_butonu.click
@@ -146,5 +163,7 @@ describe "Bilira" do
     # Toleranslı karşılaştırma: belirli bir hassasiyetle değerleri karşılaştır
     tolerans = 0.0000001 # Hesaplama hassasiyeti için tolerans
     expect(yaklasik_deger_ui).to be_within(tolerans).of(formatted_yaklasik_deger)
+
+    
   end
 end
