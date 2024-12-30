@@ -58,3 +58,6 @@ build-iPhoneSimulator/
 !**/__pycache__/
 node_modules
 **/node_modules
+# Google API credentials and token files
+credentials.json
+token.yaml
