@@ -30,7 +30,6 @@ describe "Bilira" do
   it "Bilira" do
     app = GmailApp.new
     app.delete_all_messages
-    app.list_messages
 
     bilira_page = BiliraPage.new(driver)
 
@@ -82,22 +81,24 @@ describe "Bilira" do
     app.list_messages
 
     otp_gir.send_keys(otp_code)
-    sleep 15
+    sleep 5
 
     gonder_button = driver.find_element(:xpath, '//input[@class="button"]')
     gonder_button.click
     sleep 8
 
-    telefon_ekle_button=driver.find_element(:xpath, '//*[@class="link-button"]')
+    telefon_ekle_button = driver.find_element(:xpath, '//*[@class="link-button"]')
     telefon_ekle_button.click
 
-    telefon_ekle_gec=driver.find_element(:xpath, '//p//a')
+    telefon_ekle_gec = driver.find_element(:xpath, '//p//a')
     telefon_ekle_gec.click
 
     sleep 8
 
-
-    coin_arama_butonu = driver.find_element(:xpath, '//*[@aria-keyshortcuts="Meta+K Control+K"]')
+    coin_arama_butonu = nil
+    try_for(5, 0.1) do
+      coin_arama_butonu = driver.find_element(:xpath, '//*[@aria-keyshortcuts="Meta+K Control+K"]')
+    end
     coin_arama_butonu.click
 
     sleep 3
