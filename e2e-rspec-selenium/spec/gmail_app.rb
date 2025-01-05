@@ -2,6 +2,8 @@ require 'google/apis/gmail_v1'
 require 'googleauth'
 require 'googleauth/stores/file_token_store'
 require 'fileutils'
+require 'base64'
+require 'nokogiri'
 
 class GmailApp
   OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'
@@ -30,7 +32,7 @@ class GmailApp
       url = @authorizer.get_authorization_url(base_url: OOB_URI)
       puts "Aşağıdaki URL'yi ziyaret ederek yetkilendirme yapın:\n#{url}"
       print 'Yetkilendirme kodunu girin: '
-      code = "4/1AanRRrv0xOavnFKoHcv1_HfIC0k8BmrWg8rWjBUoE4Y9Hncdgy59fOUJgtA"
+      code = "4/1AanRRruUHIrLU_glSvLIxbjNBIZeXnThWSqV1T88EPce1KK9ZBgsWQROfj4"
       credentials = @authorizer.get_and_store_credentials_from_code(user_id: @user_id, code: code, base_url: OOB_URI)
     end
     credentials
@@ -68,18 +70,138 @@ class GmailApp
   end
   
   def read_last_message
-    result = @gmail_service.list_user_messages('me', max_results: 1)  # Sadece son mesajı alıyoruz
-    if result.messages.nil? || result.messages.empty?
-      puts "Hiç mesaj bulunamadı."
-    else
-      # Son mesajı al
-      message_id = result.messages.first.id
-      message = @gmail_service.get_user_message('me', message_id)
+    result = @gmail_service.list_user_messages('me', q: 'from:support@bilira.co')
+    puts "\nSearching for emails from support@bilira.co..."
+    puts "Found #{result.messages&.length || 0} messages"
+    
+    if result.messages && !result.messages.empty?
+      message = @gmail_service.get_user_message('me', result.messages[0].id)
+      puts "\n=== Bilira'dan Gelen Son Mesaj ==="
+      puts "ID: #{message.id}"
+      puts "Tarih: #{message.payload.headers.find { |h| h.name == 'Date' }&.value}"
+      puts "Kimden: #{message.payload.headers.find { |h| h.name == 'From' }&.value}"
+      puts "Konu: #{message.payload.headers.find { |h| h.name == 'Subject' }&.value}"
       
-      # Mesaj içeriğini yazdır
-      puts "Mesaj Başlığı: #{message.payload.headers.find { |header| header.name == 'Subject' }&.value}"
-      puts "Mesaj Gönderen: #{message.payload.headers.find { |header| header.name == 'From' }&.value}"
-      puts "Mesaj İçeriği: #{message.snippet}"
+      otp_code = nil
+      begin
+        # Get the message body
+        if message.payload.parts
+          # Multipart message - find HTML part
+          html_part = message.payload.parts.find { |part| part.mime_type == 'text/html' }
+          if html_part && html_part.body.data
+            raw_content = html_part.body.data
+            puts "\nRaw HTML content:"
+            puts raw_content
+            
+            # Try parsing as HTML first
+            begin
+              doc = Nokogiri::HTML(raw_content)
+              # Look in span and p tags
+              doc.css('span, p').each do |node|
+                text = node.text.strip
+                if text =~ /^\d{6}$/  # Exactly 6 digits
+                  otp_code = text
+                  puts "\nBulunan OTP Kodu (from HTML element): #{otp_code}"
+                  return otp_code
+                end
+              end
+            rescue => e
+              puts "HTML parsing failed: #{e.message}"
+            end
+
+            # If not found in HTML elements, try plain text search
+            raw_content.scan(/(\d{6})/).each do |match|
+              potential_otp = match[0]
+              if potential_otp.length == 6
+                otp_code = potential_otp
+                puts "\nBulunan OTP Kodu (from raw text): #{otp_code}"
+                return otp_code
+              end
+            end
+            
+            # If still not found, try decoding
+            begin
+              content = Base64.decode64(raw_content)
+              puts "\nSuccessfully decoded with decode64"
+              
+              # Try parsing decoded content as HTML
+              begin
+                doc = Nokogiri::HTML(content)
+                doc.css('span, p').each do |node|
+                  text = node.text.strip
+                  if text =~ /^\d{6}$/
+                    otp_code = text
+                    puts "\nBulunan OTP Kodu (from decoded HTML): #{otp_code}"
+                    return otp_code
+                  end
+                end
+              rescue => e
+                puts "Decoded HTML parsing failed: #{e.message}"
+              end
+              
+              # If still not found, try plain text search in decoded content
+              content.scan(/(\d{6})/).each do |match|
+                potential_otp = match[0]
+                if potential_otp.length == 6
+                  otp_code = potential_otp
+                  puts "\nBulunan OTP Kodu (from decoded content): #{otp_code}"
+                  return otp_code
+                end
+              end
+              
+            rescue => e
+              puts "decode64 failed: #{e.message}"
+            end
+          end
+        elsif message.payload.body.data
+          # Single part message
+          raw_content = message.payload.body.data
+          puts "\nRaw content:"
+          puts raw_content
+          
+          # Try parsing as HTML first
+          begin
+            doc = Nokogiri::HTML(raw_content)
+            doc.css('span, p').each do |node|
+              text = node.text.strip
+              if text =~ /^\d{6}$/
+                otp_code = text
+                puts "\nBulunan OTP Kodu (from HTML element): #{otp_code}"
+                return otp_code
+              end
+            end
+          rescue => e
+            puts "HTML parsing failed: #{e.message}"
+          end
+          
+          # If not found in HTML, try plain text search
+          raw_content.scan(/(\d{6})/).each do |match|
+            potential_otp = match[0]
+            if potential_otp.length == 6
+              otp_code = potential_otp
+              puts "\nBulunan OTP Kodu (from raw content): #{otp_code}"
+              return otp_code
+            end
+          end
+        end
+        
+      rescue => e
+        puts "Hata oluştu: #{e.message}"
+        puts e.backtrace
+      end
+      
+      if otp_code
+        delete_message(message.id)
+      end
+      
+      return otp_code
     end
+    nil
+  end
+
+  def get_user_email
+    result = @gmail_service.get_user_profile('me')
+    puts "\nGmail Hesabı: #{result.email_address}"
+    result.email_address
   end
 end

@@ -9,7 +9,6 @@ require 'yaml'
 require_relative 'gmail_app'
 require_relative 'gmail_api_authenticator'
 
-
 describe "Bilira" do
   include TestHelper
 
@@ -21,7 +20,6 @@ describe "Bilira" do
   end
 
   before(:each) do
-    
     sleep 1 # for some webdriver verson, it might not wait page loaded
   end
 
@@ -33,8 +31,7 @@ describe "Bilira" do
     app = GmailApp.new
     app.delete_all_messages
     app.list_messages
-    
-    
+
     bilira_page = BiliraPage.new(driver)
 
     bilira_page.accept_cookie
@@ -51,25 +48,40 @@ describe "Bilira" do
     # İkinci sekmeye geçiş yap (ilk sekme 0 indeksli olduğu için 1. sekmeye geçiş yapıyoruz)
     driver.switch_to.window(handles[1])
     sleep 3
-    
-    
-    
+
     mail = driver.find_element(:xpath, '//input[@name="email"]')
-    mail.send_keys("testquality1tester@gmail.com")
+    mail.send_keys("qatester1532@gmail.com")
 
     password = driver.find_element(:xpath, '//input[@name="password"]')
     password.send_keys("3ZE9tj7miEJR@Qg")
+    sleep 3
+    gonder_button = driver.find_element(:xpath, "//*[@class='button g-recaptcha']")
+    gonder_button.click
 
-    password = driver.find_element(:xpath, '//input[@class="button g-recaptcha"]')
-    password.click
-    
-    
     sleep 3
     # otp kodu girilecek
-    otp_gir = driver.find_element(:xpath, '//*[@class="input"]')
-    app.read_last_message
+    otp_gir = driver.find_element(:xpath, "//input[@name='code']")
 
-    otp_gir.send_keys("862573")
+    # Mail gelene kadar en fazla 30 saniye bekle, her 5 saniyede bir kontrol et
+    otp_code = nil
+    max_attempts = 6 # 6 deneme x 5 saniye = 30 saniye
+    attempts = 0
+
+    while otp_code.nil? && attempts < max_attempts
+      puts "Mail kontrol ediliyor... (#{attempts + 1}. deneme)"
+      sleep 5
+      otp_code = app.read_last_message
+      attempts += 1
+    end
+
+    expect(otp_code).not_to be_nil
+    puts "OTP kodu bulundu: #{otp_code}"
+
+    # Son mesajın içeriğini göster
+    puts "\nSon mesajın detayları:"
+    app.list_messages
+
+    otp_gir.send_keys(otp_code)
     sleep 15
 
     gonder_button = driver.find_element(:xpath, '//input[@class="button"]')
@@ -163,7 +175,5 @@ describe "Bilira" do
     # Toleranslı karşılaştırma: belirli bir hassasiyetle değerleri karşılaştır
     tolerans = 0.0000001 # Hesaplama hassasiyeti için tolerans
     expect(yaklasik_deger_ui).to be_within(tolerans).of(formatted_yaklasik_deger)
-
-    
   end
 end

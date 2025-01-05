@@ -22,6 +22,6 @@ gem 'stringio', '>= 3.1.2'
 gem 'googleauth', '~> 1.12', '>= 1.12.2'
 gem 'fileutils', '~> 1.7', '>= 1.7.3'
 gem 'yaml'
-
+gem 'nokogiri'
 
 # gemfile

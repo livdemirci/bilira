@@ -141,6 +141,7 @@ DEPENDENCIES
   googleauth (~> 1.12, >= 1.12.2)
   httpclient
   json
+  nokogiri
   pp
   pry
   rake
