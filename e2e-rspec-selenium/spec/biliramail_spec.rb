@@ -3,7 +3,6 @@ load File.dirname(__FILE__) + '/../test_helper.rb'
 require 'pry'
 require 'google/apis/gmail_v1'
 require 'googleauth'
-require 'googleauth'
 require 'fileutils'
 require 'yaml'
 require_relative 'gmail_app'
@@ -90,7 +89,7 @@ describe "Bilira" do
     telefon_ekle_button = driver.find_element(:xpath, '//*[@class="link-button"]')
     telefon_ekle_button.click
 
-    telefon_ekle_gec = driver.find_element(:xpath, '//p//a')
+    telefon_ekle_gec = driver.find_element(:xpath, '//input[@class="button" and @type="submit"]')
     telefon_ekle_gec.click
 
     sleep 8

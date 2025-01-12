@@ -7,7 +7,7 @@ require_relative 'gmail_api_authenticator'
 
 describe "Bilira" do
   include TestHelper
-  
+
   before(:all) do
     @driver = $driver = Selenium::WebDriver.for(browser_type, browser_options)
     driver.manage().window().resize_to(1920, 1080)
@@ -16,7 +16,6 @@ describe "Bilira" do
   end
 
   before(:each) do
-    
     sleep 1 # for some webdriver verson, it might not wait page loaded
   end
 
@@ -26,8 +25,6 @@ describe "Bilira" do
 
   it "Bilira" do
     # Uygulama çalıştırma
-    
-    
 
     bilira_page = BiliraPage.new(driver)
 

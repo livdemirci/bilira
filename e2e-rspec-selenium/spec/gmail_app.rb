@@ -9,8 +9,8 @@ require 'nokogiri'
 class GmailApp
   class TokenExpiredError < StandardError; end
 
-  OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'.freeze
-  APPLICATION_NAME = 'Gmail API Ruby Quickstart'.freeze
+  OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'
+  APPLICATION_NAME = 'Gmail API Ruby Quickstart'
   
   # Proje kök dizinini bul
   ROOT_DIR = File.expand_path('../..', __dir__)
